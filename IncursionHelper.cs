@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using ExileCore;
 using ExileCore.PoEMemory.Elements;
+using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
 using SharpDX;
 
-namespace IncursionHelpers
+namespace IncursionHelper
 {
-    public class Core : BaseSettingsPlugin<Settings>
+    public class IncursionHelper : BaseSettingsPlugin<IncursionHelperSettings>
     {
-        private readonly Dictionary<string, Room> _rooms = new Dictionary<string, Room>();
+        private readonly Dictionary<string, Room> _rooms = new();
         private bool _wasOpened;
         private Room _room1;
         private Room _room2;
@@ -21,6 +21,28 @@ namespace IncursionHelpers
             return base.Initialise();
         }
 
+        public override void AreaChange(AreaInstance area)
+        {
+            //Perform once-per-zone processing here
+            //For example, Radar builds the zone map texture here
+        }
+
+        public override Job Tick()
+        {
+            //Perform non-render-related work here, e.g. position calculation.
+            //This method is still called on every frame, so to really gain
+            //an advantage over just throwing everything in the Render method
+            //you have to return a custom job, but this is a bit of an advanced technique
+            //here's how, just in case:
+            //return new Job($"{nameof(BetrayalOptimizer)}MainJob", () =>
+            //{
+            //    var a = Math.Sqrt(7);
+            //});
+
+            //otherwise, just run your code here
+            //var a = Math.Sqrt(7);
+            return null;
+        }
 
         public override void Render()
         {
@@ -116,19 +138,27 @@ namespace IncursionHelpers
 
             if (splitIndex1 != -1)
             {
-                roomType1 = roomType1.Substring(splitIndex1 + trimWord.Length);
-                roomType1 = roomType1.Substring(0, roomType1.Length - 2);
+                roomType1 = roomType1[(splitIndex1 + trimWord.Length)..];
+                roomType1 = roomType1[..^2];
             }
             else
                 roomType1 = $"Error: Cannot parse room type from: {roomType1}";
 
             if (splitIndex2 != -1)
             {
-                roomType2 = roomType2.Substring(splitIndex2 + trimWord.Length);
-                roomType2 = roomType2.Substring(0, roomType2.Length - 2);
+                roomType2 = roomType2[(splitIndex2 + trimWord.Length)..];
+                roomType2 = roomType2[..^2];
             }
             else
                 roomType2 = $"Error: Cannot parse room type from: {roomType2}";
+        }
+        
+        public override void EntityAdded(Entity entity)
+        {
+            //If you have a reason to process every entity only once,
+            //this is a good place to do so.
+            //You may want to use a queue and run the actual
+            //processing (if any) inside the Tick method.
         }
 
         #region Config loader
@@ -175,8 +205,8 @@ namespace IncursionHelpers
 
                         var color = GetColor(ref roomOutcome);
 
-                        if (roomName[roomName.Length - 2] == ':') //colors in room name was useless
-                            roomName = roomName.Substring(0, roomName.Length - 2);
+                        if (roomName[^2] == ':') //colors in room name was useless
+                            roomName = roomName[..^2];
 
                         var roomValue = new Room(roomName, roomOutcome, color, allRooms);
                         allRooms.Add(roomValue);
@@ -192,21 +222,18 @@ namespace IncursionHelpers
             }
         }
 
-        private Color GetColor(ref string name)
+        private static Color GetColor(ref string name)
         {
-            if (name[name.Length - 2] == ':')
+            if (name[^2] != ':') return Color.Gray;
+            var color = name[^1];
+            name = name[..^2];
+
+            return color switch
             {
-                var color = name[name.Length - 1];
-                name = name.Substring(0, name.Length - 2);
-
-                switch (color)
-                {
-                    case 'G': return Color.Green;
-                    case 'Y': return Color.Yellow;
-                }
-            }
-
-            return Color.Gray;
+                'G' => Color.Green,
+                'Y' => Color.Yellow,
+                _ => Color.Gray
+            };
         }
 
         #endregion

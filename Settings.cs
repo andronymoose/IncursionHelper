@@ -1,10 +1,10 @@
 ﻿using ExileCore.Shared.Interfaces;
 using ExileCore.Shared.Nodes;
 
-namespace IncursionHelpers
+namespace IncursionHelper
 {
-    public class Settings : ISettings
+    public class IncursionHelperSettings : ISettings
     {
-        public ToggleNode Enable { get; set; } = new ToggleNode(true);
+        public ToggleNode Enable { get; set; } = new(false);
     }
 }
